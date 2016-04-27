@@ -10,6 +10,7 @@ import javax.swing.Timer;
 import rbadia.voidspace.model.Asteroid;
 import rbadia.voidspace.model.Bullet;
 import rbadia.voidspace.model.Ship;
+import rbadia.voidspace.model.EnemyShip;
 import rbadia.voidspace.sounds.SoundManager;
 
 
@@ -23,6 +24,7 @@ public class GameLogic {
 	
 	private Ship ship;
 	private Asteroid asteroid;
+	private EnemyShip enemyShip;
 	private List<Bullet> bullets;
 	
 	/**
@@ -75,6 +77,7 @@ public class GameLogic {
 		// init the ship and the asteroid
         newShip(gameScreen);
         newAsteroid(gameScreen);
+        newEnemyShip(gameScreen);
         
         // prepare game screen
         gameScreen.doNewGame();
@@ -160,6 +163,15 @@ public class GameLogic {
 		return asteroid;
 	}
 	
+	
+	/**
+	 * Create a new enemy ship (and replace current one).
+	 */
+	public EnemyShip newEnemyShip(GameScreen screen){
+		this.enemyShip = new EnemyShip(screen);
+		return enemyShip;
+	}
+	
 	/**
 	 * Returns the ship.
 	 * @return the ship
@@ -175,7 +187,15 @@ public class GameLogic {
 	public Asteroid getAsteroid() {
 		return asteroid;
 	}
-
+	
+	/**
+	 * Returns the enemy ship.
+	 * @return the enemy ship
+	 */
+	public EnemyShip getEnemyShip() {
+		return enemyShip;
+	}
+	
 	/**
 	 * Returns the list of bullets.
 	 * @return the list of bullets
