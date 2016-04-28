@@ -42,6 +42,7 @@ public class InputHandler implements KeyListener{
 				if((currentTime - lastBulletTime) > 1000/5){
 					lastBulletTime = currentTime;
 					gameLogic.fireBullet();
+		//			gameLogic.fireEnemyBullet();
 				}
 			}
 

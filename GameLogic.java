@@ -10,6 +10,7 @@ import javax.swing.Timer;
 import rbadia.voidspace.model.Asteroid;
 import rbadia.voidspace.model.Bullet;
 import rbadia.voidspace.model.Ship;
+import rbadia.voidspace.model.EnemyShip;
 import rbadia.voidspace.sounds.SoundManager;
 
 
@@ -23,6 +24,7 @@ public class GameLogic {
 	
 	private Ship ship;
 	private Asteroid asteroid;
+	private EnemyShip enemyShip;
 	private List<Bullet> bullets;
 	
 	/**
@@ -75,6 +77,7 @@ public class GameLogic {
 		// init the ship and the asteroid
         newShip(gameScreen);
         newAsteroid(gameScreen);
+        newEnemyShip(gameScreen);
         
         // prepare game screen
         gameScreen.doNewGame();
@@ -120,6 +123,7 @@ public class GameLogic {
 		timer.start();
 	}
 	
+
 	/**
 	 * Fire a bullet from ship.
 	 */
@@ -128,7 +132,12 @@ public class GameLogic {
 		bullets.add(bullet);
 		soundMan.playBulletSound();
 	}
-	
+//	public void fireEnemyBullet(){
+//		Bullet bullet = new Bullet(enemyShip);
+//		bullets.add(bullet);
+//		
+//		soundMan.playBulletSound();
+//	}
 	/**
 	 * Move a bullet once fired.
 	 * @param bullet the bullet to move
@@ -138,12 +147,27 @@ public class GameLogic {
 		if(bullet.getY() - bullet.getSpeed() >= 0){
 			bullet.translate(0, -bullet.getSpeed());
 			return false;
+			
+		
 		}
+		
+	
 		else{
 			return true;
 		}
 	}
 	
+	public boolean moveEnemyBullet(Bullet enemyBullet){
+		if(enemyBullet.getY() - enemyBullet.getSpeed() >= 0){
+			enemyBullet.translate(0, -enemyBullet.getSpeed());
+			return false;
+		
+
+		}
+		else{
+			return true;
+		}
+	}
 	/**
 	 * Create a new ship (and replace current one).
 	 */
@@ -158,6 +182,15 @@ public class GameLogic {
 	public Asteroid newAsteroid(GameScreen screen){
 		this.asteroid = new Asteroid(screen);
 		return asteroid;
+	}
+	
+	
+	/**
+	 * Create a new enemy ship (and replace current one).
+	 */
+	public EnemyShip newEnemyShip(GameScreen screen){
+		this.enemyShip = new EnemyShip(screen);
+		return enemyShip;
 	}
 	
 	/**
@@ -175,7 +208,15 @@ public class GameLogic {
 	public Asteroid getAsteroid() {
 		return asteroid;
 	}
-
+	
+	/**
+	 * Returns the enemy ship.
+	 * @return the enemy ship
+	 */
+	public EnemyShip getEnemyShip() {
+		return enemyShip;
+	}
+	
 	/**
 	 * Returns the list of bullets.
 	 * @return the list of bullets

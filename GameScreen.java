@@ -17,6 +17,7 @@ import rbadia.voidspace.graphics.GraphicsManager;
 import rbadia.voidspace.model.Asteroid;
 import rbadia.voidspace.model.Bullet;
 import rbadia.voidspace.model.Ship;
+import rbadia.voidspace.model.EnemyShip;
 import rbadia.voidspace.sounds.SoundManager;
 
 /**
@@ -30,12 +31,15 @@ public class GameScreen extends JPanel {
 	
 	private static final int NEW_SHIP_DELAY = 500;
 	private static final int NEW_ASTEROID_DELAY = 500;
+	private static final int NEW_ENEMYSHIP_DELAY = 500;
 	
 	private long lastShipTime;
 	private long lastAsteroidTime;
+	private long lastEnemyShipTime;
 	
 	private Rectangle asteroidExplosion;
 	private Rectangle shipExplosion;
+	private Rectangle enemyShipExplosion;
 	
 	private JLabel shipsValueLabel;
 	private JLabel destroyedValueLabel;
@@ -97,8 +101,9 @@ public class GameScreen extends JPanel {
 	public void updateScreen(){
 		Ship ship = gameLogic.getShip();
 		Asteroid asteroid = gameLogic.getAsteroid();
+		EnemyShip enemyShip = gameLogic.getEnemyShip();
 		List<Bullet> bullets = gameLogic.getBullets();
-		
+		List<Bullet> enemyBullets = gameLogic.getBullets();
 		// set orignal font - for later use
 		if(this.originalFont == null){
 			this.originalFont = g2d.getFont();
@@ -129,6 +134,9 @@ public class GameScreen extends JPanel {
 				graphicsMan.drawAsteroidExplosion(asteroidExplosion, g2d, this);
 			}
 			if((currentTime - lastShipTime) < NEW_SHIP_DELAY){
+				graphicsMan.drawShipExplosion(shipExplosion, g2d, this);
+			}
+			if((currentTime - lastEnemyShipTime) < NEW_ENEMYSHIP_DELAY){
 				graphicsMan.drawShipExplosion(shipExplosion, g2d, this);
 			}
 			return;
@@ -166,6 +174,31 @@ public class GameScreen extends JPanel {
 			}
 		}
 		
+		// draw enemy ships
+		if(!status.isNewEnemyShip()){
+			// draw the enemy ship until it reaches the bottom of the screen
+			if(enemyShip.getY() + enemyShip.getSpeed() < this.getHeight()){
+				enemyShip.translate(0, enemyShip.getSpeed());
+				graphicsMan.drawEnemyShip(enemyShip, g2d, this);
+			}
+			else{
+				enemyShip.setLocation(rand.nextInt(getWidth() - enemyShip.width), 0);
+			}
+		}
+		else{
+			long currentTime = System.currentTimeMillis();
+			if((currentTime - lastEnemyShipTime) > NEW_ENEMYSHIP_DELAY){
+				// draw a new enemy ship
+				lastEnemyShipTime = currentTime;
+				status.setNewEnemyShip(false);
+				enemyShip.setLocation(rand.nextInt(getWidth() - enemyShip.width), 0);
+			}
+			else{
+				// draw explosion
+				graphicsMan.drawEnemyShipExplosion(enemyShipExplosion, g2d, this);
+			}
+		}
+		
 		// draw bullets
 		for(int i=0; i<bullets.size(); i++){
 			Bullet bullet = bullets.get(i);
@@ -177,6 +210,18 @@ public class GameScreen extends JPanel {
 				i--;
 			}
 		}
+		
+		// draw enemy bullets
+				for(int i=0; i<enemyBullets.size(); i++){
+					Bullet enemyBullet = enemyBullets.get(i);
+					graphicsMan.drawEnemyBullet(enemyBullet, g2d, this);
+					
+					boolean remove = gameLogic.moveEnemyBullet(enemyBullet);
+					if(remove){
+						enemyBullets.remove(i);
+						i--;
+					}
+				}
 		
 		// check bullet-asteroid collisions
 		for(int i=0; i<bullets.size(); i++){
@@ -198,6 +243,68 @@ public class GameScreen extends JPanel {
 				status.setNewAsteroid(true);
 				lastAsteroidTime = System.currentTimeMillis();
 				
+				// play asteroid explosion sound
+				soundMan.playAsteroidExplosionSound();
+				
+				// remove bullet
+				bullets.remove(i);
+				break;
+			}
+		}
+
+		
+		// check bullet-enemy ship collisions
+		for(int i=0; i<bullets.size(); i++){
+			Bullet bullet = bullets.get(i);
+			if(enemyShip.intersects(bullet)){
+				// increase enemy ships destroyed count
+			//	status.setAsteroidsDestroyed(status.getAsteroidsDestroyed() + 1);
+				
+				// increase score
+				status.setScore(status.getScore() + 60);
+				
+				// "remove" asteroid
+		        enemyShipExplosion = new Rectangle(
+		        		enemyShip.x,
+		        		enemyShip.y,
+		        		enemyShip.width,
+		        		enemyShip.height);
+				enemyShip.setLocation(-enemyShip.width, -enemyShip.height);
+				status.setNewEnemyShip(true);
+				lastEnemyShipTime = System.currentTimeMillis();
+				
+				// play enemy ship explosion sound
+				soundMan.playAsteroidExplosionSound();
+				
+				// remove bullet
+				bullets.remove(i);
+				break;
+			}
+		}
+		
+		// check bullet-ship collisions
+		for(int i=0; i<bullets.size(); i++){
+			Bullet bullet = bullets.get(i);
+			if(ship.intersects(bullet)){
+				// increase enemy ships destroyed count
+			//	status.setAsteroidsDestroyed(status.getAsteroidsDestroyed() + 1);
+				
+				// decrease score
+				status.setScore(status.getScore() - 60);
+				status.setShipsLeft(status.getShipsLeft() - 1);
+			
+				// "remove" ship
+		        shipExplosion = new Rectangle(
+		        		ship.x,
+		        		ship.y,
+		        		ship.width,
+		        		ship.height);
+				ship.setLocation(this.getWidth() + ship.width, -ship.height);
+				status.setNewShip(true);
+				lastShipTime = System.currentTimeMillis();
+				
+				// play ship explosion sound
+				soundMan.playShipExplosionSound();
 				// play asteroid explosion sound
 				soundMan.playAsteroidExplosionSound();
 				
@@ -261,6 +368,42 @@ public class GameScreen extends JPanel {
 			// play asteroid explosion sound
 			soundMan.playAsteroidExplosionSound();
 		}
+	
+		// check ship-enemy ship collisions
+		if(enemyShip.intersects(ship)){
+			// decrease number of ships left
+			status.setShipsLeft(status.getShipsLeft() - 1);
+			
+			status.setEnemyShipsDestroyed(status.getEnemyShipsDestroyed() + 1);
+			
+			//decrease score
+			status.setScore(status.getScore() - 60);
+
+			// "remove" enemy ship 
+	        enemyShipExplosion = new Rectangle(
+	        		enemyShip.x,
+	        		enemyShip.y,
+	        		enemyShip.width,
+	        		enemyShip.height);
+			enemyShip.setLocation(-enemyShip.width, -enemyShip.height);
+			status.setNewEnemyShip(true);
+			lastEnemyShipTime = System.currentTimeMillis();
+			
+			// "remove" ship
+	        shipExplosion = new Rectangle(
+	        		ship.x,
+	        		ship.y,
+	        		ship.width,
+	        		ship.height);
+			ship.setLocation(this.getWidth() + ship.width, -ship.height);
+			status.setNewShip(true);
+			lastShipTime = System.currentTimeMillis();
+			
+			// play ship explosion sound
+			soundMan.playShipExplosionSound();
+			// play asteroid explosion sound
+			soundMan.playAsteroidExplosionSound();
+		}
 		
 		// update asteroids destroyed label
 		destroyedValueLabel.setText(Long.toString(status.getAsteroidsDestroyed()));
@@ -272,6 +415,8 @@ public class GameScreen extends JPanel {
 		scoreValueLabel.setText(Long.toString(status.getScore()));
 		
 	}
+	
+	
 
 	/**
 	 * Draws the "Game Over" message.
@@ -379,6 +524,7 @@ public class GameScreen extends JPanel {
 	public void doNewGame(){		
 		lastAsteroidTime = -NEW_ASTEROID_DELAY;
 		lastShipTime = -NEW_SHIP_DELAY;
+		lastEnemyShipTime = -NEW_ENEMYSHIP_DELAY;
 				
 		bigFont = originalFont;
 		biggestFont = null;
@@ -387,6 +533,7 @@ public class GameScreen extends JPanel {
 		shipsValueLabel.setForeground(Color.BLACK);
 		shipsValueLabel.setText(Integer.toString(status.getShipsLeft()));
 		destroyedValueLabel.setText(Long.toString(status.getAsteroidsDestroyed()));
+		
 		scoreValueLabel.setText(Long.toString(status.getScore()));
 	}
 
